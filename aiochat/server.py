@@ -3,29 +3,41 @@ Chat
 """
 
 import asyncio
+import logging
+import sys
 from aiohttp import web
 
 
-@asyncio.coroutine
-def handle(request):
-    name = request.match_info.get('name', "Anonymous")
-    text = "Hello, " + name
-    return web.Response(body=text.encode('utf-8'))
+log = logging.getLogger()
 
 
-@asyncio.coroutine
-def init(loop):
+def static_page(request):
+    with open('client.html', 'rb') as fh:
+        return web.Response(body=fh.read())
+
+
+def get_app(loop):
     app = web.Application(loop=loop)
-    app.router.add_route('GET', '/{name}', handle)
+    app.router.add_route('GET', '/chat', static_page)
+    return app
 
-    srv = yield from loop.create_server(app.make_handler(),
-                                        '127.0.0.1', 8080)
-    print("Server started at http://127.0.0.1:8080")
-    return srv
+
+def main():
+    print('please open: localhost:8080/chat')
+    log.addHandler(logging.StreamHandler(sys.stdout))
+    log.setLevel(logging.INFO)
+
+    loop = asyncio.get_event_loop()
+    app = get_app(loop)
+
+    @asyncio.coroutine
+    def start_server():
+        return (yield from loop.create_server(app.make_handler(),
+                                              '127.0.0.1', 8080))
+    loop.run_until_complete(start_server())
+    loop.run_forever()
+
 
 if __name__ == '__main__':
-    print('please open: localhost:8080')
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(init(loop))
-    loop.run_forever()
+    main()
 
