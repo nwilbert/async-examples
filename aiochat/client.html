@@ -3,19 +3,41 @@
     <title>AIO Chat</title>
 </head>
 <body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script>
 
 function submit_message() {
+    var messageField = $('#message');
+    $.ajax({
+        type: 'POST',
+        url: '/chat/messages/',
+        data: JSON.stringify({
+            username: $('#username').val(),
+            message: messageField.val()
+        }),
+        contentType: 'application/json'
+    });
+    messageField.val('')
+    messageField.focus();
 
 }
+
+$(function () {
+    $('#message').keypress(function(event) {
+        if (event.which == 13) {
+            submit_message();
+            event.preventDefault();
+        }
+    }).focus();
+})
 
 </script>
 
 <form name=test_form>
     <label for="username">Username: </label>
-    <input type="text" name="username" value="anonymous" size="20">
+    <input id="username" type="text" name="username" value="anonymous" size="20">
     <label for="message">Message: </label>
-    <input type="text" name="message" value="" size="100">
+    <input id="message" type="text" name="message" value="" size="100">
     <input type=button onClick="submit_message();" value="Submit">
 </form>
 

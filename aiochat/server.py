@@ -1,41 +1,47 @@
 """
-Chat
+Simple Chat Server using asyncio, asyncio and Server Sent Events
 """
 
 import asyncio
 import logging
 import sys
+from http.client import NO_CONTENT
 from aiohttp import web
 
 
 log = logging.getLogger()
 
 
-def static_page(request):
+def get_static_page(_):
     with open('client.html', 'rb') as fh:
         return web.Response(body=fh.read())
 
 
-def get_app(loop):
+@asyncio.coroutine
+def post_message(request):
+    data = yield from request.json()
+    return web.Response(status=NO_CONTENT)
+
+
+def _get_app(loop):
     app = web.Application(loop=loop)
-    app.router.add_route('GET', '/chat', static_page)
+    app.router.add_route('GET', '/chat', get_static_page)
+    app.router.add_route('POST', '/chat/messages/', post_message)
     return app
 
 
 def main():
     print('please open: localhost:8080/chat')
-    log.addHandler(logging.StreamHandler(sys.stdout))
-    log.setLevel(logging.INFO)
-
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     loop = asyncio.get_event_loop()
-    app = get_app(loop)
-
-    @asyncio.coroutine
-    def start_server():
-        return (yield from loop.create_server(app.make_handler(),
-                                              '127.0.0.1', 8080))
-    loop.run_until_complete(start_server())
+    app = _get_app(loop)
+    loop.run_until_complete(_start_app(loop, app, '127.0.0.1', 8080))
     loop.run_forever()
+
+
+@asyncio.coroutine
+def _start_app(loop, app, host, port):
+    return (yield from loop.create_server(app.make_handler(), host, port))
 
 
 if __name__ == '__main__':
