@@ -13,6 +13,8 @@ from aiohttp import web
 
 log = logging.getLogger()
 
+next_message = None
+
 
 def get_static_page(_):
     with open('client.html', 'rb') as fh:
@@ -21,14 +23,20 @@ def get_static_page(_):
 
 @asyncio.coroutine
 def post_message(request):
-    data = yield from request.json()
+    global next_message
+    json_data = yield from request.json()
     # TODO: bleach
+    next_message.set_result({
+        'author': json_data['username'],
+        'text': json_data['text']
+    })
+    next_message = asyncio.Future()
     return web.Response(status=NO_CONTENT)
 
 
 @asyncio.coroutine
 def get_messages_sse(request):
-    # see http://aiohttp.readthedocs.org/en/latest/web.html?
+    # see https://github.com/brutasse/asyncio-sse
     response = web.StreamResponse()
     response.headers.add('Content-Type', 'text/event-stream')
     response.headers.add('Cache-Control', 'no-cache')
@@ -42,19 +50,13 @@ def get_messages_sse(request):
         response.write(b'\n')
 
     while True:
-        yield from asyncio.sleep(2)
-        send({
-            'author': 'Niko',
-            'text': 'Hallo'
-        })
-        yield from asyncio.sleep(2)
-        send({
-            'author': 'Miri',
-            'text': 'Bonjour'
-        })
+        data = yield from asyncio.shield(next_message)
+        send(data)
 
 
 def _get_app(loop):
+    global next_message
+    next_message = asyncio.Future()
     app = web.Application(loop=loop)
     app.router.add_route('GET', '/chat', get_static_page)
     app.router.add_route('POST', '/chat/messages/', post_message)
@@ -64,7 +66,7 @@ def _get_app(loop):
 
 def main():
     print('please open: localhost:8080/chat')
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     app = _get_app(loop)
     loop.run_until_complete(_start_app(loop, app, '127.0.0.1', 8080))
