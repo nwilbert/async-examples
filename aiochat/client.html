@@ -7,18 +7,18 @@
 <script>
 
 function submit_message() {
-    var messageField = $('#message');
+    var $messageField = $('#message');
     $.ajax({
         type: 'POST',
         url: '/chat/messages/',
         data: JSON.stringify({
             username: $('#username').val(),
-            message: messageField.val()
+            text: $messageField.val()
         }),
         contentType: 'application/json'
     });
-    messageField.val('')
-    messageField.focus();
+    $messageField.val('')
+    $messageField.focus();
 
 }
 
@@ -29,17 +29,29 @@ $(function () {
             event.preventDefault();
         }
     }).focus();
+
+    var source = new EventSource('/chat/messages/sse'),
+        $messagesContainer = $('#messages');
+
+    source.onmessage = function (event) {
+        var jsonData = JSON.parse(event.data)
+        $messagesContainer.prepend(
+            '<p><b>' + jsonData.author + ':</b> ' + jsonData.text + '</p>');
+    }
 })
 
 </script>
-
-<form name=test_form>
-    <label for="username">Username: </label>
-    <input id="username" type="text" name="username" value="anonymous" size="20">
-    <label for="message">Message: </label>
-    <input id="message" type="text" name="message" value="" size="100">
-    <input type=button onClick="submit_message();" value="Submit">
-</form>
+<div>
+    <form name=test_form>
+        <label for="username">Username: </label>
+        <input id="username" type="text" name="username" value="anonymous" size="20">
+        <label for="message">Message: </label>
+        <input id="message" type="text" name="message" value="" size="100">
+        <input type=button onClick="submit_message();" value="Submit">
+    </form>
+</div>
+<div id="messages">
+</div>
 
 </body>
 </html>
