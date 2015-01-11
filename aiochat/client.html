@@ -1,5 +1,6 @@
 <html>
 <head>
+    <meta charset="utf-8">
     <title>AIO Chat</title>
 </head>
 <body>
@@ -30,7 +31,7 @@ $(function () {
         }
     }).focus();
 
-    var source = new EventSource('/chat/messages/sse'),
+    var source = new EventSource('/chat/messages/'),
         $messagesContainer = $('#messages');
 
     source.onmessage = function (event) {

@@ -1,1 +1,2 @@
 aiohttp >= 0.13.1
+netifaces
