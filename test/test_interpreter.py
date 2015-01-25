@@ -1,7 +1,7 @@
 
 import unittest
 
-from calculator.expression import expression_gen
+from calculator.interpreter import expression_gen
 
 
 class ExpressionTests(unittest.TestCase):

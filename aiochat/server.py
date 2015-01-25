@@ -1,5 +1,5 @@
 """
-Simple Chat Server using asyncio, asyncio and Server Sent Events.
+Simple Chat Server using asyncio, aiohttp and Server Sent Events.
 """
 
 import asyncio
@@ -9,8 +9,9 @@ import json
 import html
 from http.client import NO_CONTENT
 
-import netifaces
 from aiohttp import web
+
+import utils
 
 log = logging.getLogger()
 
@@ -20,14 +21,14 @@ class ChatApp(web.Application):
     def __init__(self, loop):
         super().__init__(loop=loop)
         self._next_message = asyncio.Future()
-        self.router.add_route('GET', '/chat', self._get_static_page)
+        self.router.add_route('GET', '/chat', self._get_client_page)
         self.router.add_route('POST', '/chat/messages/',
                               self._post_chat_message.__get__(self))
         self.router.add_route('GET', '/chat/messages/',
                               self._get_chat_messages.__get__(self))
 
     @staticmethod
-    def _get_static_page(_):
+    def _get_client_page(_):
         with open('client.html', 'rb') as fh:
             return web.Response(body=fh.read())
 
@@ -66,19 +67,12 @@ class ChatApp(web.Application):
         response.write(b'\n')
 
 
-def _print_server_info(port):
-    for name in netifaces.interfaces():
-        interface = netifaces.ifaddresses(name).get(netifaces.AF_INET)
-        if interface:
-            host = interface[0]['addr']
-            if host != '127.0.0.1':
-                print('Chat is served at:\n{}:{}/chat'.format(host, port))
-
-
-def main():
+def run_server():
     port = 8080
-    _print_server_info(port)
+    for potential_ip in utils.get_potential_ips():
+        print('Chat is served at:\n{}:{}/chat'.format(potential_ip, port))
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
     loop = asyncio.get_event_loop()
     app = ChatApp(loop)
 
@@ -96,5 +90,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run_server()
 

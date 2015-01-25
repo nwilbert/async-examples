@@ -1,8 +1,12 @@
-"""
-Simple example with to model a multi-step process.
-"""
+
+import asyncio
 
 
+class InvalidValue(Exception):
+    pass
+
+
+@asyncio.coroutine
 def expression_gen(nested=False):
     result = 0
     product = 1
@@ -14,7 +18,7 @@ def expression_gen(nested=False):
             try:
                 product *= int(value)
             except ValueError:
-                raise Exception('invalid input')
+                raise InvalidValue()
         value = yield '+ or * or ' + (')' if nested else '=')
         if value == '+':
             result += product
@@ -24,16 +28,7 @@ def expression_gen(nested=False):
         elif (nested and value == ')') or (not nested and value == '='):
             return result + product
         else:
-            raise Exception('invalid input')
+            raise InvalidValue()
 
 
-if __name__ == '__main__':
-    print('Welcome to the Calculator')
-    state = expression_gen()
-    v = None
-    while True:
-        try:
-            v = input('enter ' + state.send(v) + ': ')
-        except StopIteration as e:
-            print('result:', e.value)
-            break
+
