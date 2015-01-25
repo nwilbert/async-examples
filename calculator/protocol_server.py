@@ -1,6 +1,8 @@
 """
 Simple TCP server to expose the calculation interpreter.
 
+Here we use the lower level Transport/Protocol API.
+
 Clients can connect with telnet.
 """
 
