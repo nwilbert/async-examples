@@ -20,21 +20,21 @@ RESULT = 'result: {}\n'
 
 
 @asyncio.coroutine
-def handle_client(reader, writer):
+def client_handler(reader, writer):
     interpreter = expression_gen()
-    writer.write(PROMPT.format(next(interpreter)).encode())
+    response = next(interpreter)
+    writer.write(PROMPT.format(response).encode())
+
     while True:
         message = (yield from reader.readline()).decode().strip()
         try:
-            reply = interpreter.send(message)
-
+            response = interpreter.send(message)
         except StopIteration as e:
             writer.write(RESULT.format(e.value).encode())
             yield from writer.drain()
             writer.close()
             log.info('sent result {}'.format(e.value))
             return
-
         except InvalidValue:
             writer.write('invalid value\n'.encode())
             yield from writer.drain()
@@ -42,20 +42,15 @@ def handle_client(reader, writer):
             log.warning('invalid input')
             return
 
-        writer.write(PROMPT.format(reply).encode())
+        writer.write(PROMPT.format(response).encode())
         yield from writer.drain()
 
 
-def run_server():
-    port = 8080
-    for potential_ip in utils.get_potential_ips():
-        print('Use "telnet {} {}"\n'.format(potential_ip, port))
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
+def run_server(host, port):
     loop = asyncio.get_event_loop()
-    server_coroutine = asyncio.start_server(handle_client, '0.0.0.0', port,
-                                            loop=loop)
-    server = loop.run_until_complete(server_coroutine)
+    server_coro = asyncio.start_server(client_handler, host=host, port=port,
+                                       loop=loop)
+    server = loop.run_until_complete(server_coro)
     try:
         loop.run_forever()
     except KeyboardInterrupt:
@@ -67,4 +62,8 @@ def run_server():
 
 
 if __name__ == '__main__':
-    run_server()
+    port = 8080
+    for potential_ip in utils.get_potential_ips():
+        print('Use "telnet {} {}"\n'.format(potential_ip, port))
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    run_server('0.0.0.0', port)
