@@ -21,12 +21,13 @@ class ChatApp(web.Application):
 
     def __init__(self, loop):
         super().__init__(loop=loop)
-        self._next_message = asyncio.Future()
         self.router.add_route('GET', '/chat', self.get_static_client_page)
         self.router.add_route('POST', '/chat/messages/',
                               self.post_chat_message.__get__(self))
         self.router.add_route('GET', '/chat/messages/',
                               self.get_chat_messages.__get__(self))
+
+        self._next_message = asyncio.Future()
 
     @staticmethod
     def get_static_client_page(_):
@@ -66,6 +67,7 @@ class ChatApp(web.Application):
         response.headers.add('Connection', 'keep-alive')
         response.start(request)
         response.write(b'retry: 1000\n')  # set retry interval to 1s
+
         while True:
             json_data = yield from asyncio.shield(self._next_message)
             self._send_event(json_data, response)
