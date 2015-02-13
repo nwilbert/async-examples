@@ -1,12 +1,9 @@
 
-import asyncio
-
 
 class InvalidValue(Exception):
     pass
 
 
-@asyncio.coroutine
 def expression_gen(nested=False):
     result = 0
     product = 1
