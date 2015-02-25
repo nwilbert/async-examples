@@ -31,19 +31,16 @@ def client_handler(reader, writer):
             response = interpreter.send(message)
         except StopIteration as e:
             writer.write(RESULT.format(e.value).encode())
-            yield from writer.drain()
             writer.close()
             log.info('sent result {}'.format(e.value))
             return
         except InvalidValue:
             writer.write('invalid value\n'.encode())
-            yield from writer.drain()
             writer.close()
             log.warning('invalid input')
             return
 
         writer.write(PROMPT.format(response).encode())
-        yield from writer.drain()
 
 
 def run_server(host, port):
