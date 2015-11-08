@@ -19,14 +19,13 @@ PROMPT = '{}\n> '
 RESULT = 'result: {}\n'
 
 
-@asyncio.coroutine
-def client_handler(reader, writer):
+async def client_handler(reader, writer):
     interpreter = expression_gen()
     response = next(interpreter)
     writer.write(PROMPT.format(response).encode())
 
     while True:
-        message = (yield from reader.readline()).decode().strip()
+        message = (await reader.readline()).decode().strip()
         try:
             response = interpreter.send(message)
         except StopIteration as e:

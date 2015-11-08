@@ -35,10 +35,9 @@ class ChatApp(web.Application):
         with open('client.html', 'rb') as fh:
             return web.Response(body=fh.read())
 
-    @asyncio.coroutine
-    def post_chat_message(self, request):
+    async def post_chat_message(self, request):
         """POST request handler for submitting new chat message."""
-        json_data = yield from request.json()
+        json_data = await request.json()
         try:
             username = json_data['username']
             text = json_data['text']
@@ -57,19 +56,18 @@ class ChatApp(web.Application):
         # https://bugzilla.mozilla.org/show_bug.cgi?id=521301
         return web.Response(status=NO_CONTENT, content_type='text/html')
 
-    @asyncio.coroutine
-    def get_chat_messages(self, request):
+    async def get_chat_messages(self, request):
         """GET SSE request handler, streaming the incoming chat messages."""
         # inspired by https://github.com/brutasse/asyncio-sse
         response = web.StreamResponse()
         response.headers.add('Content-Type', 'text/event-stream')
         response.headers.add('Cache-Control', 'no-cache')
         response.headers.add('Connection', 'keep-alive')
-        response.start(request)
+        await response.prepare(request)
         response.write(b'retry: 1000\n')  # set retry interval to 1s
 
         while True:
-            json_data = yield from asyncio.shield(self._next_message)
+            json_data = await self._next_message
             self._send_event(json_data, response)
 
     @staticmethod
@@ -84,11 +82,10 @@ class ChatApp(web.Application):
 def run_server(host, port):
     loop = asyncio.get_event_loop()
 
-    @asyncio.coroutine
-    def _start_app():
+    async def _start_app():
         app = ChatApp(loop)
-        return (yield from loop.create_server(app.make_handler(),
-                                              host=host, port=port))
+        return (await loop.create_server(app.make_handler(),
+                                         host=host, port=port))
 
     loop.run_until_complete(_start_app())
     try:
@@ -105,4 +102,3 @@ if __name__ == '__main__':
         print('Chat is served at:\n{}:{}/chat'.format(potential_ip, port))
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     run_server('0.0.0.0', port)
-
