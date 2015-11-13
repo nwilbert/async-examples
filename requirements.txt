@@ -1,3 +1,5 @@
 aiohttp == 0.18.3
 netifaces == 0.10.4
 jupyter == 1.0.0
+motor == 0.5b0
+matplotlib == 1.5.0
